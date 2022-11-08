@@ -1,0 +1,3 @@
+mediapipe
+argparse
+python-dotenv
