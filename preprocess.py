@@ -1,3 +1,4 @@
+import os
 import mediapipe as mp
 import matplotlib.pyplot as plt
 import cv2
@@ -24,15 +25,16 @@ chosen_left_eye_idxs  = [362, 385, 387, 263, 373, 380]
 chosen_right_eye_idxs = [33,  160, 158, 133, 153, 144]
 all_chosen_idxs = chosen_left_eye_idxs + chosen_right_eye_idxs
 
-def plot(*, n=1, img_dt, cat, face_landmarks=None, ts_thickness=1, ts_circle_radius=2, lmk_circle_radius=3, name="1"):
+def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_radius=2, lmk_circle_radius=3, save_img=False):
     # For plotting Face Tessellation
-    image_drawing_tool = img_dt 
+    img_shape = np.zeros((img_dt.shape[0], img_dt.shape[1], img_dt.shape[2]), dtype='uint8')
+    image_drawing_tool = img_shape 
      
      # For plotting all eye landmarks
-    image_eye_lmks = img_dt.copy()
+    image_eye_lmks = img_shape
      
     # For plotting chosen eye landmarks
-    img_eye_lmks_chosen = img_dt.copy() if img_eye_lmks_chosen is None else img_eye_lmks_chosen
+    img_eye_lmks_chosen = img_shape
  
     # Initializing drawing utilities for plotting face mesh tessellation
     connections_drawing_spec = mp_drawing.DrawingSpec(
@@ -51,8 +53,7 @@ def plot(*, n=1, img_dt, cat, face_landmarks=None, ts_thickness=1, ts_circle_rad
         landmark_list=face_landmarks,
         connections=mp_facemesh.FACEMESH_TESSELATION,
         landmark_drawing_spec=None,
-        connection_drawing_spec=connections_drawing_spec,
-    )
+        connection_drawing_spec=connections_drawing_spec)
 
     landmarks = face_landmarks.landmark
  
@@ -76,10 +77,43 @@ def plot(*, n=1, img_dt, cat, face_landmarks=None, ts_thickness=1, ts_circle_rad
                        lmk_circle_radius, 
                        (255, 255, 255), 
                        -1)
- 
-    if cat=='yawn':
-        cv2.imwrite(str('./yawn/'+str(n)+'.jpg'), image_drawing_tool)
-    else:
-        cv2.imwrite(str('./no_yawn/'+str(n)+'.jpg'), image_drawing_tool)
 
-    return
+    if save_img:
+        cv2.imwrite(os.path.join('.', 'Data', 'landmarks', cat, str(name)), image_drawing_tool)
+
+    return image_drawing_tool
+
+
+def face_for_yawn(direc="./drowsiness-dataset/train"):
+    i=1
+    yaw_no = []
+    IMG_SIZE = 145
+    categories = ["yawn", "no_yawn"]
+    for category in categories:
+        path_link = os.path.join(direc, category)
+        class_num1 = categories.index(category)
+        for image_file in os.listdir(path_link):
+            image = cv2.imread(os.path.join(path_link, image_file))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # convert to RGB
+            image = np.ascontiguousarray(image)
+            imgH, imgW, _ = image.shape
+                             
+            # Running inference using static_image_mode 
+            with mp_facemesh.FaceMesh(
+                static_image_mode=True,         # Default=False
+                max_num_faces=1,                # Default=1
+                refine_landmarks=False,         # Default=False
+                min_detection_confidence=0.5,   # Default=0.5
+                min_tracking_confidence= 0.5,) as face_mesh:
+
+                results = face_mesh.process(image)
+
+                # If detections are available.
+                if results.multi_face_landmarks:  
+                    # Iterate over detections of each face. Here, we have max_num_faces=1, 
+                    # So there will be at most 1 element in 
+                    # the 'results.multi_face_landmarks' list            
+                    # Only one iteration is performed.
+                    for face_id, face_landmarks in enumerate(results.multi_face_landmarks):    
+                        add_landmarks(img_dt=image.copy(), cat=category, n=i ,face_landmarks=face_landmarks, name=image_file)
+                    i+=1
