@@ -3,5 +3,5 @@ import tensorflow
 def create_model():
     pass
 
-def train():
+def train(processed_images):
     pass

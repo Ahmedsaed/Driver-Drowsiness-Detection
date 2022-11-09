@@ -86,9 +86,7 @@ def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_r
     return image_drawing_tool
 
 
-def preprocess_images(dir="./drowsiness-dataset/train"):
-    IMG_SIZE = 145
-    categories = ["drowse", "not_drowse"]
+def preprocess_images(dir, categories):
     for category in categories:
         path_link = os.path.join(dir, category)
         class_num1 = categories.index(category)
