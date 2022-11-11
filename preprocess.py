@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import cv2
 import logging
 import numpy as np
+from sklearn.preprocessing import LabelBinarizer
 from setup_data import setup_dirs
+from keras.preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
+
 
 mp_facemesh = mp.solutions.face_mesh
 mp_drawing  = mp.solutions.drawing_utils
@@ -45,10 +49,7 @@ def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_r
         thickness=ts_thickness, 
         circle_radius=ts_circle_radius, 
         color=(255, 255, 255))
- 
-    # Initialize a matplotlib figure.
-    fig = plt.figure(figsize=(20, 15))
-    fig.set_facecolor("white")
+
  
     # Draw landmarks on face using the drawing utilities.
     mp_drawing.draw_landmarks(
@@ -90,6 +91,7 @@ def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_r
 def process_image(image, category, name):
     logging.info(f'Processing {name} in {category}')
     resized_img=None
+    IMG_SIZE = 145
     image = np.ascontiguousarray(image)
                             
     with mp_facemesh.FaceMesh(
@@ -104,7 +106,9 @@ def process_image(image, category, name):
         if results.multi_face_landmarks:
             for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
               resized_img = add_landmarks(name=name, img_dt=image.copy(), cat=category, face_landmarks=face_landmarks, save_img=True)
-                          
+
+        resized_img = cv2.resize(resized_img, (IMG_SIZE, IMG_SIZE))
+
     return resized_img
 
 def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", face_cas_path="./Data/prediction-images/haarcascade_frontalface_default.xml", categories=None):
@@ -131,4 +135,45 @@ def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", face_cas_p
                 imgs_with_landmarks.append([land_face_array, class_num])
                 i=i+1
 
+    return imgs_with_landmarks
+
+def setup_training_data(data, test_size=0.2):
+    logging.info('Extracting features and labels for training')
+
+    x, y = [], []
+    for feature, label in data:
+        x.append(feature)
+        y.append(label)
+
+    x = np.array(x)
+    # x = x.reshape(-1, 145, 145, 3)
+
+    label_bin = LabelBinarizer()
+    y = label_bin.fit_transform(y)
+    y = np.array(y)
+
+    X_train, X_test, y_train, y_test = train_test_split(x, y, random_state=42, test_size=test_size)
+
+    train_generator = ImageDataGenerator(rescale=1/255, zoom_range=0.2, horizontal_flip=True, rotation_range=30)
+    test_generator = ImageDataGenerator(rescale=1/255)
+
+    train_generator = train_generator.flow(np.array(X_train), y_train, shuffle=False)
+    test_generator = test_generator.flow(np.array(X_test), y_test, shuffle=False)
+
+    return train_generator, test_generator
+
+def load_landmarks(categories):
+    logging.info(f'Loading landmarks from {os.path.join(".", "Data", "landmarks")}')
+    
+    IMG_SIZE=145
+    imgs_with_landmarks=[]
+    for category in categories:
+        category_path = os.path.join('.', 'Data', 'landmarks', category)
+        class_num = categories.index(category)
+
+        for image in os.listdir(category_path):
+            image_array = cv2.imread(os.path.join(category_path, image), cv2.IMREAD_COLOR)
+            image_array = cv2.resize(image_array, (IMG_SIZE, IMG_SIZE))
+            imgs_with_landmarks.append([image_array, class_num])
+    
     return imgs_with_landmarks
