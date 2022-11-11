@@ -4,7 +4,7 @@ import sys
 def get_input_args():
     parser = argparse.ArgumentParser(description='Driver Drowsiness Detection')
 
-    parser.add_argument('-s', '--setup', action='store_true', default = False, help = 'Setup Kaggle API and download data')
+    parser.add_argument('-s', '--setup', action='store_true', default = False, help = 'Setup Kaggle API to download data')
     parser.add_argument('-d', '--download_datasets', action='store_true', default = False, help = 'Download Datasets from Kaggle')
     parser.add_argument('-p', '--preprocess_data', action='store_true', default = False, help = 'Apply preprocessing to images')
     parser.add_argument('-t', '--train_model', action='store_true', default = False, help = 'Train model on data')

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 import logging
 import numpy as np
+from setup_data import setup_dirs
 
 mp_facemesh = mp.solutions.face_mesh
 mp_drawing  = mp.solutions.drawing_utils
@@ -27,7 +28,7 @@ chosen_right_eye_idxs = [33,  160, 158, 133, 153, 144]
 all_chosen_idxs = chosen_left_eye_idxs + chosen_right_eye_idxs
 
 def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_radius=2, lmk_circle_radius=3, save_img=False, black_background=False):
-    logging.debug(f'Adding landmarks to {name} image, save_img is set to {save_img}')
+    logging.debug(f'Adding landmarks to {name} image. {"" if save_img else "not "} saving {name} to {os.path.join(".", "Data", "landmarks", cat, str(name))}')
 
     img_height, img_width = img_dt.shape[0], img_dt.shape[1]
 
@@ -86,35 +87,48 @@ def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_r
     return image_drawing_tool
 
 
-def preprocess_images(dir, categories):
+def process_image(image, category, name):
+    logging.info(f'Processing {name} in {category}')
+    resized_img=None
+    image = np.ascontiguousarray(image)
+                            
+    with mp_facemesh.FaceMesh(
+        static_image_mode=True,       
+        max_num_faces=1,              
+        refine_landmarks=False,       
+        min_detection_confidence=0.5, 
+        min_tracking_confidence= 0.5,) as face_mesh:
+
+        results = face_mesh.process(image)
+
+        if results.multi_face_landmarks:
+            for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
+              resized_img = add_landmarks(name=name, img_dt=image.copy(), cat=category, face_landmarks=face_landmarks, save_img=True)
+                          
+    return resized_img
+
+def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", face_cas_path="./Data/prediction-images/haarcascade_frontalface_default.xml", categories=None):
+    
+    logging.info('Setting up directories for preprocessing')
+    setup_dirs(categories)
+
+    imgs_with_landmarks=[]
+    i=1
     for category in categories:
-        path_link = os.path.join(dir, category)
-        class_num1 = categories.index(category)
-        for image_file in os.listdir(path_link):
-            image = cv2.imread(os.path.join(path_link, image_file))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # convert to RGB
-            image = np.ascontiguousarray(image)
-            imgH, imgW, _ = image.shape
-                             
-            # Running inference using static_image_mode 
-            with mp_facemesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=1,               
-                refine_landmarks=False,        
-                min_detection_confidence=0.5,  
-                min_tracking_confidence= 0.5,) as face_mesh:
+        logging.info(f'Processing {category}')
+        path_link = os.path.join(dir_faces, category)
+        class_num = categories.index(category)
 
-                results = face_mesh.process(image)
+        for image in os.listdir(path_link):
+            image_array = cv2.imread(os.path.join(path_link, image), cv2.IMREAD_COLOR)
+            face_cascade = cv2.CascadeClassifier(face_cas_path)
+            faces = face_cascade.detectMultiScale(image_array, 1.3, 5)
 
-                # If detections are available.
-                if results.multi_face_landmarks:  
-                    # Iterate over detections of each face. Here, we have max_num_faces=1, 
-                    # So there will be at most 1 element in 
-                    # the 'results.multi_face_landmarks' list            
-                    # Only one iteration is performed.
-                    for face_id, face_landmarks in enumerate(results.multi_face_landmarks):    
-                        add_landmarks(image_file, image.copy(), category, face_landmarks)
+            for (x, y, w, h) in faces:
+                img = cv2.rectangle(image_array, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                roi_color = img[y:y+h, x:x+w]
+                land_face_array = process_image(roi_color, category, image)
+                imgs_with_landmarks.append([land_face_array, class_num])
+                i=i+1
 
-    # TODO: should return the status of preprocessing and image  
-
-    return 
+    return imgs_with_landmarks
