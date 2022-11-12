@@ -5,7 +5,6 @@ numpy
 sklearn
 tensorflow
 argparse
-json
 python-dotenv
 datetime
 streamlit
