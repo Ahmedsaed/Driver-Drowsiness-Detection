@@ -1,10 +1,7 @@
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-from keras.models import Sequential, load_model, model_from_json
+from keras.models import Sequential, load_model
 from keras.layers import BatchNormalization
 from preprocess import process_image
-import tensorflow as tf
-import numpy as np
-import cv2
 import os
 import logging
 

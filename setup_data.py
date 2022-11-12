@@ -28,6 +28,8 @@ def setup_dirs(categories):
     if not os.path.exists(os.path.join('.', 'Models')):
         os.makedirs(os.path.join('.', 'Models'))
 
+    if not os.path.exists(os.path.join('.', 'Logs')):
+        os.makedirs(os.path.join('.', 'Logs'))
 
 def download_datasets(datasets):
     logging.info('Downloading Datasets')

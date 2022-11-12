@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 import logging
 from input_args import get_input_args
-from setup_data import setup_kaggle, download_datasets
+from setup_data import setup_kaggle, download_datasets, setup_dirs
 from preprocess import process_dataset, setup_training_data, load_landmarks
 from model import load_saved_model, train, evaluate
 
+setup_dirs([])
+
 args = get_input_args()
-logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(encoding='utf-8', level=logging.DEBUG, filename=os.path.join('.', 'Logs', f'py_log{len(os.listdir("Logs"))}.log'), filemode='w', format='%(asctime)s %(levelname)s %(message)s')
 
 datasets = ['rakibuleceruet/drowsiness-prediction-dataset', 'adinishad/prediction-images']
 categories = ["Fatigue Subjects", "Active Subjects"]
