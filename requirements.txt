@@ -1,6 +1,6 @@
 av
 mediapipe
-opencv-python
+opencv-python-headless
 logging
 numpy
 sklearn
