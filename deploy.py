@@ -1,7 +1,6 @@
 import streamlit as st
 import av
 import threading
-import cv2
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer
 from deployment_helper_funcs import predict_rt
 
@@ -18,24 +17,63 @@ st.set_page_config(
 lock = threading.Lock()
 img_container = {"img": None}
 
+
 def video_frame_callback(frame):
     img = frame.to_ndarray(format="bgr24")
-    print(img.shape)
     # with lock:
     #     img_container["img"] = img
     if predict_rt(img):
-        img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
+        pass
 
     return av.VideoFrame.from_ndarray(img, format="bgr24")
 
+with st.sidebar:
+    st.image("./Assets/Logo.png")
+    st.markdown("# Driver Drowsiness Detection", )
+    st.markdown('## Menu')
+    choice = st.radio("Menu", ["Train","Upload","Real Time", "Logs"], label_visibility='collapsed')
+    st.info("Description")
 
-st.title("Driver Drowsiness Detection!")
+if choice == 'Train':
+    st.title("Train the model")
+    st.code('''
+        model = Sequential([
+                Conv2D(16, 3, activation='relu', input_shape=(145, 145, 3)),
+                BatchNormalization(),
+                MaxPooling2D(),
+                Dropout(0.1),
 
-ctx = webrtc_streamer(
-    key="driver-drowsiness-detection",
-    video_frame_callback=video_frame_callback,
-    video_html_attrs=VideoHTMLAttributes(autoPlay=True, controls=False, muted=False),
-)
+                Conv2D(32, 5, activation='relu'),
+                BatchNormalization(),
+                MaxPooling2D(),
+                Dropout(0.1),
+
+                Conv2D(64, 10, activation='relu'),
+                BatchNormalization(),
+                MaxPooling2D(),
+                Dropout(0.1),
+
+
+                Conv2D(128, 12, activation='relu'),
+                BatchNormalization(),
+
+                Flatten(),
+
+                Dense(512, activation='relu'),
+                Dropout(0.1),
+                Dense(1, activation='sigmoid')
+            ])
+    ''')
+    # st.image('./Assets/')
+
+
+if choice == 'Real Time':
+    st.title("Real Time Drowsiness Detection!")
+    ctx = webrtc_streamer(
+        key="driver-drowsiness-detection",
+        video_frame_callback=video_frame_callback,
+        video_html_attrs=VideoHTMLAttributes(autoPlay=True, controls=False, muted=False),
+    )
 
 # while ctx.state.playing:
 #     with lock:
