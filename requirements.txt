@@ -1,0 +1,14 @@
+av
+os
+mediapipe
+opencv-python
+logging
+numpy
+sklearn
+tensorflow
+argparse
+json
+python-dotenv
+datetime
+streamlit
+streamlit_webrtc
