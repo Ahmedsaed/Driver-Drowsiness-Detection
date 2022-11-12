@@ -2,7 +2,7 @@ av
 mediapipe
 opencv-python-headless
 numpy
-sklearn
+scikit-learn
 tensorflow
 argparse
 python-dotenv
