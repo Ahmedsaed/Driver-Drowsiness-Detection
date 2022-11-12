@@ -1,12 +1,14 @@
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import BatchNormalization
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.models import Sequential, load_model, model_from_json
+from keras.layers import BatchNormalization
+from preprocess import process_image
 import tensorflow as tf
 import numpy as np
+import cv2
 import os
 import logging
 
-def load_model(load_last=True):
+def load_saved_model(load_last=True):
     if load_last and os.path.exists(os.path.join('.', 'Models')) and len(os.listdir(os.path.join(".", "Models"))) > 0:
         logging.info('Loading model from {os.path.join(".", "Models", f"model{len(os.listdir(os.path.join(".", "Models")))}.h5")}')
         model = load_model(os.path.join('.', 'Models', f'model{len(os.listdir(os.path.join(".", "Models")))}.h5'))
@@ -46,19 +48,23 @@ def load_model(load_last=True):
 
     return model
 
-def train(train_generator, test_generator, load_last=True):
-    logging.info('Loading model for training')
-    model = load_model(load_last)
 
+def train(model, train_generator, test_generator, load_last=True):
     model.fit(train_generator, epochs=10, validation_data=test_generator)
 
     model.save(os.path.join('.', 'Models', f'model{len(os.listdir(os.path.join(".", "Models")))+1}.h5'))
 
-def evaluate(test_generator):
-    logging.info('Loading model for evaluation')
-    model = load_model()
+def evaluate(model, test_generator):
     result = model.evaluate(test_generator)
     metrics = dict(zip(model.metrics_names, result))
     print(f"Model Evaluation Score:")
     print(f"Loss: {metrics['loss']}")
     print(f"Accuracy: {metrics['accuracy']}")
+
+def predict(model, image):
+    try:
+        processed_img = process_image(image, '', '', save_img=False)
+        processed_img = processed_img.reshape(-1, 145, 145, 3)
+        return not model.predict(processed_img)
+    except:
+        return 1

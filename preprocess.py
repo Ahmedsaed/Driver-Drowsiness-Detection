@@ -88,12 +88,21 @@ def add_landmarks(name, img_dt, cat, face_landmarks, ts_thickness=1, ts_circle_r
     return image_drawing_tool
 
 
-def process_image(image, category, name):
+def process_image(image, category, name, face_cas_path="./Data/prediction-images/haarcascade_frontalface_default.xml", save_img=True):
     logging.info(f'Processing {name} in {category}')
     resized_img=None
     IMG_SIZE = 145
-    image = np.ascontiguousarray(image)
-                            
+    
+    face_cascade = cv2.CascadeClassifier(face_cas_path)
+    faces = face_cascade.detectMultiScale(image, 1.3, 5)
+
+    roi_color = None
+    for (x, y, w, h) in faces:
+        img = cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        roi_color = img[y:y+h, x:x+w]
+
+    image = np.ascontiguousarray(roi_color)
+
     with mp_facemesh.FaceMesh(
         static_image_mode=True,       
         max_num_faces=1,              
@@ -105,19 +114,18 @@ def process_image(image, category, name):
 
         if results.multi_face_landmarks:
             for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
-              resized_img = add_landmarks(name=name, img_dt=image.copy(), cat=category, face_landmarks=face_landmarks, save_img=True)
+              resized_img = add_landmarks(name=name, img_dt=image.copy(), cat=category, face_landmarks=face_landmarks, save_img=save_img)
 
         resized_img = cv2.resize(resized_img, (IMG_SIZE, IMG_SIZE))
 
     return resized_img
 
-def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", face_cas_path="./Data/prediction-images/haarcascade_frontalface_default.xml", categories=None):
+def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", categories=None):
     
     logging.info('Setting up directories for preprocessing')
     setup_dirs(categories)
 
     imgs_with_landmarks=[]
-    i=1
     for category in categories:
         logging.info(f'Processing {category}')
         path_link = os.path.join(dir_faces, category)
@@ -125,15 +133,8 @@ def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", face_cas_p
 
         for image in os.listdir(path_link):
             image_array = cv2.imread(os.path.join(path_link, image), cv2.IMREAD_COLOR)
-            face_cascade = cv2.CascadeClassifier(face_cas_path)
-            faces = face_cascade.detectMultiScale(image_array, 1.3, 5)
-
-            for (x, y, w, h) in faces:
-                img = cv2.rectangle(image_array, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                roi_color = img[y:y+h, x:x+w]
-                land_face_array = process_image(roi_color, category, image)
-                imgs_with_landmarks.append([land_face_array, class_num])
-                i=i+1
+            land_face_array = process_image(image_array, category, image)
+            imgs_with_landmarks.append([land_face_array, class_num])
 
     return imgs_with_landmarks
 
@@ -146,8 +147,7 @@ def setup_training_data(data, test_size=0.2):
         y.append(label)
 
     x = np.array(x)
-    # x = x.reshape(-1, 145, 145, 3)
-
+    
     label_bin = LabelBinarizer()
     y = label_bin.fit_transform(y)
     y = np.array(y)

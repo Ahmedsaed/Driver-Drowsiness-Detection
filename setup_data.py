@@ -25,6 +25,9 @@ def setup_dirs(categories):
         if not os.path.exists(os.path.join('.', 'Data', 'landmarks', cat)):
             os.makedirs(os.path.join('.', 'Data', 'landmarks', cat))
 
+    if not os.path.exists(os.path.join('.', 'Models')):
+        os.makedirs(os.path.join('.', 'Models'))
+
 
 def download_datasets(datasets):
     logging.info('Downloading Datasets')

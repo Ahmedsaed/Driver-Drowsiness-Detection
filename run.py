@@ -4,7 +4,7 @@ import logging
 from input_args import get_input_args
 from setup_data import setup_kaggle, download_datasets
 from preprocess import process_dataset, setup_training_data, load_landmarks
-from model import train, evaluate
+from model import load_saved_model, train, evaluate
 
 args = get_input_args()
 logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
@@ -26,6 +26,10 @@ if args.train_model:
 
     train_generator, test_generator = setup_training_data(processed_images)
 
-    train(train_generator, test_generator)
+    logging.info('Loading model for training')
+    model = load_saved_model(load_last=True)
 
-    evaluate(test_generator)
+    train(model, train_generator, test_generator)
+
+    evaluate(model, test_generator)
+
