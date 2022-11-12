@@ -1,5 +1,4 @@
 av
-os
 mediapipe
 opencv-python
 logging
