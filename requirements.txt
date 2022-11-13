@@ -3,7 +3,7 @@ mediapipe
 opencv-python-headless
 numpy
 scikit-learn
-tensorflow
+tensorflow-cpu
 argparse
 python-dotenv
 datetime

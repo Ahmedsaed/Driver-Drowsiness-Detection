@@ -73,9 +73,9 @@ if choice == 'Real Time':
         key="driver-drowsiness-detection",
         video_frame_callback=video_frame_callback,
         video_html_attrs=VideoHTMLAttributes(autoPlay=False, controls=False, muted=False),
-        rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-        }
+        # rtc_configuration={
+        # "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        # }
     )
 
 # while ctx.state.playing:
