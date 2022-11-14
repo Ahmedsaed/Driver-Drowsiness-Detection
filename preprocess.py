@@ -132,9 +132,12 @@ def process_dataset(dir_faces="./Data/drowsiness-prediction-dataset", categories
         class_num = categories.index(category)
 
         for image in os.listdir(path_link):
-            image_array = cv2.imread(os.path.join(path_link, image), cv2.IMREAD_COLOR)
-            land_face_array = process_image(image_array, category, image)
-            imgs_with_landmarks.append([land_face_array, class_num])
+            try:
+                image_array = cv2.imread(os.path.join(path_link, image))
+                land_face_array = process_image(image_array, category, image)
+                imgs_with_landmarks.append([land_face_array, class_num])
+            except:
+                logging.info(f"Couldn't process {image} in {category}")
 
     return imgs_with_landmarks
 

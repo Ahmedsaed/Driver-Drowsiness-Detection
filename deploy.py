@@ -1,28 +1,24 @@
 import streamlit as st
 import av
-import threading
+import os
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer
 from deployment_helper_funcs import predict_rt
+from run import datasets, train_model
 
 st.set_page_config(
     page_title="Driver Drowsiness Detection | LearnOpenCV",
     page_icon="https://learnopencv.com/wp-content/uploads/2017/12/favicon.png",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         "About": "### View the code at the GitHub repo",
     },
 )
 
-lock = threading.Lock()
-img_container = {"img": None}
-
-
 def video_frame_callback(frame):
     img = frame.to_ndarray(format="bgr24")
-    # with lock:
-    #     img_container["img"] = img
-    if predict_rt(img):
+
+    if not predict_rt(img):
         pass
 
     return av.VideoFrame.from_ndarray(img, format="bgr24")
@@ -30,42 +26,75 @@ def video_frame_callback(frame):
 with st.sidebar:
     st.image("./Assets/Logo.png")
     st.markdown("# Driver Drowsiness Detection", )
+    st.subheader("Prevent accidents by alerting the driver")
     st.markdown('## Menu')
     choice = st.radio("Menu", ["Train","Upload","Real Time", "Logs"], label_visibility='collapsed')
-    st.info("Description")
 
 if choice == 'Train':
     st.title("Train the model")
-    st.code('''
-        model = Sequential([
-                Conv2D(16, 3, activation='relu', input_shape=(145, 145, 3)),
-                BatchNormalization(),
-                MaxPooling2D(),
-                Dropout(0.1),
+    st.markdown("### Model Architecture")
 
-                Conv2D(32, 5, activation='relu'),
-                BatchNormalization(),
-                MaxPooling2D(),
-                Dropout(0.1),
+    col1, col2= st.columns([3,2])
 
-                Conv2D(64, 10, activation='relu'),
-                BatchNormalization(),
-                MaxPooling2D(),
-                Dropout(0.1),
+    with col1:
+        st.code('''
+            model = Sequential([
+                    Conv2D(16, 3, activation='relu', input_shape=(145, 145, 3)),
+                    BatchNormalization(),
+                    MaxPooling2D(),
+                    Dropout(0.1),
+
+                    Conv2D(32, 5, activation='relu'),
+                    BatchNormalization(),
+                    MaxPooling2D(),
+                    Dropout(0.1),
+
+                    Conv2D(64, 10, activation='relu'),
+                    BatchNormalization(),
+                    MaxPooling2D(),
+                    Dropout(0.1),
 
 
-                Conv2D(128, 12, activation='relu'),
-                BatchNormalization(),
+                    Conv2D(128, 12, activation='relu'),
+                    BatchNormalization(),
 
-                Flatten(),
+                    Flatten(),
 
-                Dense(512, activation='relu'),
-                Dropout(0.1),
-                Dense(1, activation='sigmoid')
-            ])
-    ''')
-    # st.image('./Assets/')
+                    Dense(512, activation='relu'),
+                    Dropout(0.1),
+                    Dense(1, activation='sigmoid')
+                ])
+        ''')
+    with col2:
+        st.image('./Assets/cnn_arch.png')
 
+    col1, col2= st.columns([1,1])
+
+    with col1:
+        training_dataset = st.selectbox('Training dataset name', datasets)
+    with col2:
+        epochs = st.number_input('Number of Epochs', step=1)
+    
+    col1, col2= st.columns([1,9])
+    train_btn_state = False
+
+    with col1:
+        if st.button('Train', disabled=train_btn_state):
+            with col2:
+                with st.spinner('Training'):
+                    train_btn_state = True
+                    train_model(os.path.join('.', 'Data', training_dataset.split('/')[-1]), int(epochs))
+                st.success('Done!')
+
+if choice == 'Upload':
+    st.title('Upload Video For Prediction')
+    video_file = st.file_uploader('Video', type=['mp4'])
+
+    if video_file is not None:
+        
+        st.video(video_file)
+
+    
 
 if choice == 'Real Time':
     st.title("Real Time Drowsiness Detection!")
@@ -77,13 +106,21 @@ if choice == 'Real Time':
         # "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         # }
     )
-
-# while ctx.state.playing:
-#     with lock:
-#         img = img_container["img"]
-#     if img is None:
-#         continue
     
-    # prediction = predict(model, img)
 
-    
+if choice == 'Logs':
+    st.title('Logs')
+
+    log_data = ''
+    with st.spinner('Loading Logs'):
+        with open(os.path.join('.', 'Logs', 'debug.log')) as log_file:
+            lines = log_file.readlines()[-100:]
+            lines.reverse()
+            for line in lines:
+                log_data += line
+    st.markdown(
+    f'''
+    ```log
+        {log_data}
+    '''
+    )

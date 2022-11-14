@@ -3,3 +3,4 @@
 /__pycache__
 /Models
 /Logs
+*tmp*

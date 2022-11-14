@@ -4,10 +4,12 @@ from keras.layers import BatchNormalization
 from preprocess import process_image
 import os
 import logging
+import numpy as np
 
 def load_saved_model(load_last=True):
     if load_last and os.path.exists(os.path.join('.', 'Models')) and len(os.listdir(os.path.join(".", "Models"))) > 0:
-        logging.info('Loading model from {os.path.join(".", "Models", f"model{len(os.listdir(os.path.join(".", "Models")))}.h5")}')
+        model_path = os.path.join(".", "Models", f"model{len(os.listdir(os.path.join('.', 'Models')))}.h5")
+        logging.info(f'Loading model from {model_path}')
         model = load_model(os.path.join('.', 'Models', f'model{len(os.listdir(os.path.join(".", "Models")))}.h5'))
     else:
         logging.info('No model found. Creating a new one')
@@ -46,8 +48,8 @@ def load_saved_model(load_last=True):
     return model
 
 
-def train(model, train_generator, test_generator, load_last=True):
-    model.fit(train_generator, epochs=10, validation_data=test_generator)
+def train(model, train_generator, test_generator, load_last=True, epochs=5):
+    model.fit(train_generator, epochs=epochs, validation_data=test_generator)
 
     model.save(os.path.join('.', 'Models', f'model{len(os.listdir(os.path.join(".", "Models")))+1}.h5'))
 
@@ -62,6 +64,7 @@ def predict(model, image):
     try:
         processed_img = process_image(image, '', '', save_img=False)
         processed_img = processed_img.reshape(-1, 145, 145, 3)
-        return not model.predict(processed_img)
+        prediction = model.predict(processed_img)
+        return np.where(prediction[0][0] < 0.5, 0, 1)
     except:
-        return 1
+        return 2 #1
