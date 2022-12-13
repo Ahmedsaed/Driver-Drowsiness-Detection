@@ -1,6 +1,6 @@
 # Driver Drowsiness Detection
 
-This project aims to reduce car accidents by detecting if the driver is a wake or not and then take a specific action. for our case, we used a recommendation system to play energetic music to help the drive stay awake and focused
+A computer vision project that aims to reduce car accidents by detecting if the driver is a wake or not then it takes a specific action. for our case, we used a recommendation system to play energetic music to help the driver stay awake and focused.
 
 **This repo hosts the command line interface and the deployment**
 
